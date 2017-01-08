@@ -64,8 +64,9 @@
       <HintPath>..\packages\VSSDK.DTE.7.0.4\lib\net20\envdte.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.GraphModel, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\VSSDK.GraphModel.11.0.4\lib\net45\Microsoft.VisualStudio.GraphModel.dll</HintPath>
+    <Reference Include="Microsoft.VisualStudio.GraphModel, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\VSSDK.GraphModel.12.0.4\lib\net45\Microsoft.VisualStudio.GraphModel.dll</HintPath>
+      <Private>True</Private>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.OLE.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
@@ -233,10 +234,8 @@
     <CallTarget Targets="CopyEEFiles" />
   </Target>
   <Target Name="CopyEEFiles" AfterTargets="SignFiles">
-    <Copy SourceFiles="$(OutDir)\VisualStudio.Macros.ExecutionEngine.exe"
-          DestinationFiles="..\VS2015\VisualStudio2015.Macros.ExecutionEngine.exe" />
-    <Copy SourceFiles="VisualStudio2015.Macros.ExecutionEngine.exe.config"
-          DestinationFiles="..\VS2015\VisualStudio2015.Macros.ExecutionEngine.exe.config" />
+    <Copy SourceFiles="$(OutDir)\VisualStudio.Macros.ExecutionEngine.exe" DestinationFiles="..\VS2015\VisualStudio2015.Macros.ExecutionEngine.exe" />
+    <Copy SourceFiles="VisualStudio2015.Macros.ExecutionEngine.exe.config" DestinationFiles="..\VS2015\VisualStudio2015.Macros.ExecutionEngine.exe.config" />
   </Target>
   <Target Name="CleanEEFiles" AfterTargets="Clean">
     <RemoveDir Directories="..\VS2015" />

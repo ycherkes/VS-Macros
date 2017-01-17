@@ -5,10 +5,10 @@
 //-----------------------------------------------------------------------
 
 using System;
+using System.IO;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
-using System.Windows.Threading;
 using VisualStudio.Macros.ExecutionEngine.Pipes;
 using VSMacros.Engines;
 using VSMacros.ExecutionEngine.Pipes;
@@ -22,34 +22,32 @@ namespace VSMacros.Pipes
     {
         public static NamedPipeServerStream ServerStream;
         public static Guid Guid;
-        public static Thread serverWait;
-        private static Executor executor = Manager.Instance.executor;
-        static Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+        public static Thread ServerWait;
+        private static readonly Executor executor = Manager.Instance.executor;
 
         public static void InitializeServer()
         {
-            Server.Guid = Guid.NewGuid();
-            var guid = Server.Guid.ToString();
-            Server.ServerStream = new NamedPipeServerStream(
-                pipeName:guid, 
-                direction: PipeDirection.InOut, 
-                maxNumberOfServerInstances: 1, 
-                transmissionMode: PipeTransmissionMode.Byte, 
+            Guid = Guid.NewGuid();
+            var guid = Guid.ToString();
+            ServerStream = new NamedPipeServerStream(
+                pipeName:guid,
+                direction: PipeDirection.InOut,
+                maxNumberOfServerInstances: 1,
+                transmissionMode: PipeTransmissionMode.Byte,
                 options: PipeOptions.Asynchronous);
         }
 
         private static void SendEngineFailedSilentlyCompletionMessage() {
-            Server.executor.SendCompletionMessage(isError: false, errorMessage: string.Empty);
+            executor.SendCompletionMessage(isError: false, errorMessage: string.Empty);
         }
 
         public static void WaitForMessage()
         {
-            Server.ServerStream.WaitForConnection();
+            ServerStream.WaitForConnection();
 
-            var formatter = new BinaryFormatter();
-            formatter.Binder = new BinderHelper();
+            var formatter = new BinaryFormatter {Binder = new BinderHelper()};
 
-            bool shouldKeepRunning = true;
+            var shouldKeepRunning = true;
             while (shouldKeepRunning)
             {
                 if (Executor.executionEngine.HasExited)
@@ -60,12 +58,12 @@ namespace VSMacros.Pipes
 
                 try
                 {
-                    var type = (PacketType)formatter.Deserialize(Server.ServerStream);
+                    var type = (PacketType)formatter.Deserialize(ServerStream);
 
                     switch (type)
                     {
                         case PacketType.Empty:
-                            Server.executor.IsEngineRunning = false;
+                            executor.IsEngineRunning = false;
                             shouldKeepRunning = false;
                             break;
 
@@ -74,17 +72,17 @@ namespace VSMacros.Pipes
                             break;
 
                         case PacketType.Success:
-                            Server.executor.SendCompletionMessage(isError: false, errorMessage: string.Empty);
+                            executor.SendCompletionMessage(isError: false, errorMessage: string.Empty);
                             break;
 
                         case PacketType.GenericScriptError:
-                            string error = Server.GetGenericScriptError(Server.ServerStream);
-                            Server.executor.SendCompletionMessage(isError: true, errorMessage: error);
+                            string error = GetGenericScriptError(ServerStream);
+                            executor.SendCompletionMessage(isError: true, errorMessage: error);
                             break;
 
                         case PacketType.CriticalError:
-                            error = Server.GetCriticalError(Server.ServerStream);
-                            Server.ServerStream.Close();
+                            error = GetCriticalError(ServerStream);
+                            ServerStream.Close();
                             CloseExecutorJob();
                             shouldKeepRunning = false;
                             break;
@@ -93,7 +91,7 @@ namespace VSMacros.Pipes
                 catch (System.Runtime.Serialization.SerializationException)
                 {
                 }
-            } 
+            }
         }
 
         private static void CloseExecutorJob()
@@ -104,11 +102,10 @@ namespace VSMacros.Pipes
             }
         }
 
-        private static string GetGenericScriptError(NamedPipeServerStream serverStream)
+        private static string GetGenericScriptError(Stream serverStream)
         {
-            var formatter = new BinaryFormatter();
-            formatter.Binder = new BinderHelper();
-            var scriptError = (GenericScriptError)formatter.Deserialize(Server.ServerStream);
+            var formatter = new BinaryFormatter {Binder = new BinderHelper()};
+            var scriptError = (GenericScriptError)formatter.Deserialize(serverStream);
 
             int lineNumber = scriptError.LineNumber;
             int column = scriptError.Column;
@@ -120,10 +117,10 @@ namespace VSMacros.Pipes
             return exceptionMessage;
         }
 
-        private static string GetCriticalError(NamedPipeServerStream serverStream)
+        private static string GetCriticalError(Stream serverStream)
         {
             var formatter = new BinaryFormatter();
-            var criticalError = (CriticalError)formatter.Deserialize(Server.ServerStream);
+            var criticalError = (CriticalError)formatter.Deserialize(serverStream);
 
             string message = criticalError.Message;
             string source = criticalError.StackTrace;
@@ -138,14 +135,16 @@ namespace VSMacros.Pipes
         {
             try
             {
-                var type = PacketType.FilePath;
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(Server.ServerStream, type);
+                const PacketType type = PacketType.FilePath;
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(ServerStream, type);
 
-                var filePath = new FilePath();
-                filePath.Iterations = iterations;
-                filePath.Path = path;
-                formatter.Serialize(Server.ServerStream, filePath);
+                var filePath = new FilePath
+                {
+                    Iterations = iterations,
+                    Path = path
+                };
+                formatter.Serialize(ServerStream, filePath);
             }
             catch (Exception)
             {

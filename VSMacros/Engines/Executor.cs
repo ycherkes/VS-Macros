@@ -143,8 +143,8 @@ namespace VSMacros.Engines
             this.RegisterCommandDispatcherinROT();
 
             Server.InitializeServer();
-            Server.serverWait = new Thread(new ThreadStart(Server.WaitForMessage));
-            Server.serverWait.Start();
+            Server.ServerWait = new Thread(new ThreadStart(Server.WaitForMessage));
+            Server.ServerWait.Start();
 
             EnvDTE.DTE dte = ((IServiceProvider)VSMacrosPackage.Current).GetService(typeof(SDTE)) as EnvDTE.DTE;
             string version = dte.Version;

@@ -16,36 +16,19 @@ namespace VSMacros
     {
         private static FileChangeMonitor instance;
 
-        private IVsFileChangeEx fileChangeService;
         private Dictionary<string, uint> cookies;
 
-        public static FileChangeMonitor Instance
-        {
-            get
-            {
-                if (FileChangeMonitor.instance == null)
-                {
-                    FileChangeMonitor.instance = new FileChangeMonitor(VSMacrosPackage.Current);
-                }
+        public static FileChangeMonitor Instance => instance ??
+                                                    (instance = new FileChangeMonitor(VSMacrosPackage.Current));
 
-                return FileChangeMonitor.instance;
-            }
-        }
-
-        public IVsFileChangeEx FileChangeService
-        {
-            get
-            {
-                return this.fileChangeService;
-            }
-        }
+        public IVsFileChangeEx FileChangeService { get; }
 
         private FileChangeMonitor(IServiceProvider serviceProvider)
         {
-            IVsFileChangeEx fileChangeService = serviceProvider.GetService(typeof(SVsFileChangeEx)) as IVsFileChangeEx;
-            this.fileChangeService = fileChangeService;
+            var fileChangeService = serviceProvider.GetService(typeof(SVsFileChangeEx)) as IVsFileChangeEx;
+            FileChangeService = fileChangeService;
 
-            this.cookies = new Dictionary<string, uint>();
+            cookies = new Dictionary<string, uint>();
         }
 
         #region Monitor and Unmonitor
@@ -67,7 +50,7 @@ namespace VSMacros
                 out cookie
                 );
 
-            this.cookies[path] = cookie;
+            cookies[path] = cookie;
         }
 
         /// <summary>
@@ -114,7 +97,7 @@ namespace VSMacros
         /// </param>
         public void UnmonitorFolder(string path)
         {
-            uint cookie = this.cookies[path];
+            var cookie = cookies[path];
 
             FileChangeService.UnadviseDirChange(cookie);
         }
@@ -127,7 +110,7 @@ namespace VSMacros
         /// </param>
         public void UnmonitorFile(string path)
         {
-            uint cookie = this.cookies[path];
+            var cookie = cookies[path];
 
             FileChangeService.UnadviseFileChange(cookie);
         }
@@ -141,11 +124,11 @@ namespace VSMacros
         {
             if (isDirectory)
             {
-                this.UnmonitorFolder(path);
+                UnmonitorFolder(path);
             }
             else
             {
-                this.UnmonitorFile(path);
+                UnmonitorFile(path);
             }
         }
 
@@ -160,7 +143,7 @@ namespace VSMacros
         /// </param>
         public int DirectoryChanged(string dir)
         {
-            MacroFSNode node = MacroFSNode.FindNodeFromFullPath(dir);
+            var node = MacroFSNode.FindNodeFromFullPath(dir);
             if(node != null)
             {
                 // Refresh tree rooted at the changed directory
@@ -179,26 +162,21 @@ namespace VSMacros
         /// <param name="files">
         /// Array of file names.
         /// </param>
-        /// <param name="typesOfChange">
+        /// <param name="changeTypes"/>
         /// Array of flags indicating the type of changes. <see cref="_VSFILECHANGEFLAGS" />.
         public int FilesChanged(uint numberOfFilesChanged, string[] files, uint[] changeTypes)
         {
             // Go over each file and treat the change appropriately
-            for (int i = 0; i < files.Length; i++)
+            for ( var i = 0; i < files.Length; i++)
             {
-                string path = files[i];
-                _VSFILECHANGEFLAGS change = (_VSFILECHANGEFLAGS)changeTypes[i];
+                var path = files[i];
+                var change = (_VSFILECHANGEFLAGS)changeTypes[i];
 
                 // _VSFILECHANGEFLAGS.VSFILECHG_Add is handled by DirectoryChanged
                 // Only handle _VSFILECHANGEFLAGS.VSFILECHG_Del here
-                if (change == _VSFILECHANGEFLAGS.VSFILECHG_Del)
-                {
-                    MacroFSNode node = MacroFSNode.FindNodeFromFullPath(path);
-                    if(node != null)
-                    { 
-                        node.Delete();
-                    }
-                }
+                if (change != _VSFILECHANGEFLAGS.VSFILECHG_Del) continue;
+                var node = MacroFSNode.FindNodeFromFullPath(path);
+                node?.Delete();
             }
 
             return VSConstants.S_OK;

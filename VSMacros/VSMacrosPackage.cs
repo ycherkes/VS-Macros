@@ -21,6 +21,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using VSMacros.Engines;
 using VSMacros.Interfaces;
 using VSMacros.Model;
+using DialogResult = System.Windows.Forms.DialogResult;
 
 namespace VSMacros
 {
@@ -29,63 +30,31 @@ namespace VSMacros
     public sealed class VSMacrosPackage : Package
     {
         private static VSMacrosPackage current;
-        public static VSMacrosPackage Current
-        {
-            get
-            {
-                if (current == null)
-                {
-                    current = new VSMacrosPackage();
-                }
-
-                return current;
-            }
-        }
+        public static VSMacrosPackage Current => current ?? (current = new VSMacrosPackage());
 
         public VSMacrosPackage()
         {
-            VSMacrosPackage.current = this;
+            current = this;
         }
 
         private void ShowToolWindow(object sender = null, EventArgs e = null)
         {
             // Get the (only) instance of this tool window
             // The last flag is set to true so that if the tool window does not exists it will be created.
-            ToolWindowPane window = this.FindToolWindow(typeof(MacrosToolWindow), 0, true);
-            if ((window == null) || (window.Frame == null))
+            var window = FindToolWindow(typeof(MacrosToolWindow), 0, true);
+            if (window?.Frame == null)
             {
                 throw new NotSupportedException(Resources.CannotCreateWindow);
             }
-            IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
-            Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
+            var windowFrame = (IVsWindowFrame)window.Frame;
+            ErrorHandler.ThrowOnFailure(windowFrame.Show());
         }
 
         private string macroDirectory;
-        public string MacroDirectory
-        {
-            get
-            {
-                if (this.macroDirectory == default(string))
-                {
-                    this.macroDirectory = Path.Combine(this.UserLocalDataPath, "Macros");
-                }
-                return this.macroDirectory;
-            }
-        }
+        public string MacroDirectory => macroDirectory ?? (macroDirectory = Path.Combine(UserLocalDataPath, "Macros"));
 
         private string assemblyDirectory;
-        public string AssemblyDirectory
-        {
-            get
-            {
-                if (this.assemblyDirectory == default(string))
-                {
-                    this.assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                }
-
-                return this.assemblyDirectory;
-            }
-        }
+        public string AssemblyDirectory => assemblyDirectory ?? (assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
 
         /////////////////////////////////////////////////////////////////////////////
         // Overridden Package Implementation
@@ -99,67 +68,52 @@ namespace VSMacros
         private object iconRecord = (short)Microsoft.VisualStudio.Shell.Interop.Constants.SBAI_General;
         private static RecorderDataModel dataModel;
 
-        internal static RecorderDataModel DataModel
-        {
-            get
-            {
-                if (VSMacrosPackage.dataModel == null)
-                {
-                    VSMacrosPackage.dataModel = new RecorderDataModel();
-                }
-
-                return VSMacrosPackage.dataModel;
-            }
-        }
+        internal static RecorderDataModel DataModel => dataModel ?? (dataModel = new RecorderDataModel());
 
         protected override void Initialize()
         {
             base.Initialize();
 
-            ((IServiceContainer)this).AddService(typeof(IRecorder), (serviceContainer, type) => { return new Recorder(this); }, promote: true);
-            this.statusBar = (IVsStatusbar)GetService(typeof(SVsStatusbar));
+            ((IServiceContainer)this).AddService(typeof(IRecorder), (serviceContainer, type) => new Recorder(this), promote: true);
+            statusBar = (IVsStatusbar)GetService(typeof(SVsStatusbar));
 
             // Add our command handlers for the menu
-            OleMenuCommandService mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (null != mcs)
-            {
-                // Create the command for the tool window
-                mcs.AddCommand(new MenuCommand(
-                   this.ShowToolWindow,
-                   new CommandID(GuidList.GuidVSMacrosCmdSet, (int)PkgCmdIDList.CmdIdMacroExplorer)));
+            var mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
+            if (null == mcs) return;
+            // Create the command for the tool window
+            mcs.AddCommand(new MenuCommand(ShowToolWindow,
+                                           new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdMacroExplorer)));
 
-                // Create the command for start recording
-                CommandID recordCommandID = new CommandID(GuidList.GuidVSMacrosCmdSet, (int)PkgCmdIDList.CmdIdRecord);
-                OleMenuCommand recordMenuItem = new OleMenuCommand(this.Record, recordCommandID);
-                recordMenuItem.BeforeQueryStatus += new EventHandler(this.Record_OnBeforeQueryStatus);
-                mcs.AddCommand(recordMenuItem);
+            // Create the command for start recording
+            var recordCommandId = new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdRecord);
+            var recordMenuItem = new OleMenuCommand(Record, recordCommandId);
+            recordMenuItem.BeforeQueryStatus += Record_OnBeforeQueryStatus;
+            mcs.AddCommand(recordMenuItem);
 
-                // Create the command for playback
-                mcs.AddCommand(new MenuCommand(
-                    this.Playback,
-                    new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdPlayback)));
+            // Create the command for playback
+            mcs.AddCommand(new MenuCommand(Playback,
+                                           new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdPlayback)));
 
-                // Create the command for playback multiple times
-                mcs.AddCommand(new MenuCommand(
-                    this.PlaybackMultipleTimes,
-                    new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdPlaybackMultipleTimes)));
+            // Create the command for playback multiple times
+            mcs.AddCommand(new MenuCommand(
+                PlaybackMultipleTimes,
+                new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdPlaybackMultipleTimes)));
 
-                // Create the command for save current macro
-                mcs.AddCommand(new MenuCommand(
-                    this.SaveCurrent,
-                    new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdSaveTemporaryMacro)));
+            // Create the command for save current macro
+            mcs.AddCommand(new MenuCommand(
+                SaveCurrent,
+                new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdSaveTemporaryMacro)));
 
-                // Create the command to playback bounded macros
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand1, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand1)));
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand2, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand2)));
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand3, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand3)));
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand4, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand4)));
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand5, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand5)));
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand6, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand6)));
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand7, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand7)));
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand8, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand8)));
-                mcs.AddCommand(new MenuCommand(this.PlaybackCommand9, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand9)));
-            }
+            // Create the command to playback bounded macros
+            mcs.AddCommand(new MenuCommand(PlaybackCommand1, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand1)));
+            mcs.AddCommand(new MenuCommand(PlaybackCommand2, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand2)));
+            mcs.AddCommand(new MenuCommand(PlaybackCommand3, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand3)));
+            mcs.AddCommand(new MenuCommand(PlaybackCommand4, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand4)));
+            mcs.AddCommand(new MenuCommand(PlaybackCommand5, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand5)));
+            mcs.AddCommand(new MenuCommand(PlaybackCommand6, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand6)));
+            mcs.AddCommand(new MenuCommand(PlaybackCommand7, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand7)));
+            mcs.AddCommand(new MenuCommand(PlaybackCommand8, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand8)));
+            mcs.AddCommand(new MenuCommand(PlaybackCommand9, new CommandID(GuidList.GuidVSMacrosCmdSet, PkgCmdIDList.CmdIdCommand9)));
         }
         #endregion
 
@@ -169,22 +123,22 @@ namespace VSMacros
 
         private void Record(object sender, EventArgs arguments)
         {
-            IRecorderPrivate macroRecorder = (IRecorderPrivate)this.GetService(typeof(IRecorder));
+            var macroRecorder = (IRecorderPrivate)GetService(typeof(IRecorder));
             if (!macroRecorder.IsRecording)
             {
                 Manager.Instance.StartRecording();
 
-                this.StatusBarChange(Resources.StatusBarRecordingText, 1);
-                this.ChangeMenuIcons(this.StopIcon, 0);
-                this.UpdateButtonsForRecording(true);
+                StatusBarChange(Resources.StatusBarRecordingText, 1);
+                ChangeMenuIcons(StopIcon, 0);
+                UpdateButtonsForRecording(true);
             }
             else
             {
                 Manager.Instance.StopRecording();
 
-                this.StatusBarChange(Resources.StatusBarReadyText, 0);
-                this.ChangeMenuIcons(this.StartIcon, 0);
-                this.UpdateButtonsForRecording(false);
+                StatusBarChange(Resources.StatusBarReadyText, 0);
+                ChangeMenuIcons(StartIcon, 0);
+                UpdateButtonsForRecording(false);
             }
         }
 
@@ -196,7 +150,7 @@ namespace VSMacros
             }
             else
             {
-                this.UpdateButtonsForPlayback(false);
+                UpdateButtonsForPlayback(false);
             }
 
             Manager.Instance.Playback(string.Empty);
@@ -210,33 +164,33 @@ namespace VSMacros
             }
             else
             {
-                this.UpdateButtonsForPlayback(false);
+                UpdateButtonsForPlayback(false);
             }
 
             Manager.Instance.PlaybackMultipleTimes(string.Empty);
         }
 
-        private void SaveCurrent(object sender, EventArgs arguments)
+        private static void SaveCurrent(object sender, EventArgs arguments)
         {
             Manager.Instance.SaveCurrent();
         }
 
-        private void PlaybackCommand1(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(1); }
-        private void PlaybackCommand2(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(2); }
-        private void PlaybackCommand3(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(3); }
-        private void PlaybackCommand4(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(4); }
-        private void PlaybackCommand5(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(5); }
-        private void PlaybackCommand6(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(6); }
-        private void PlaybackCommand7(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(7); }
-        private void PlaybackCommand8(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(8); }
-        private void PlaybackCommand9(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(9); }
+        private static void PlaybackCommand1(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(1); }
+        private static void PlaybackCommand2(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(2); }
+        private static void PlaybackCommand3(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(3); }
+        private static void PlaybackCommand4(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(4); }
+        private static void PlaybackCommand5(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(5); }
+        private static void PlaybackCommand6(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(6); }
+        private static void PlaybackCommand7(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(7); }
+        private static void PlaybackCommand8(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(8); }
+        private static void PlaybackCommand9(object sender, EventArgs arguments) { Manager.Instance.PlaybackCommand(9); }
 
         #endregion
 
         #region Status Bar & Menu Icons
         public void ChangeMenuIcons(BitmapSource icon, int commandNumber)
         {
-            // commandNumber is 0 for Recording, 1 for Playback and 2 for Playback Multiple Times         
+            // commandNumber is 0 for Recording, 1 for Playback and 2 for Playback Multiple Times
             try
             {
                 if (this.ImageButtons[commandNumber] != null)
@@ -396,31 +350,21 @@ namespace VSMacros
 
         #endregion
 
-        private string CommonPath
-        {
-            get
-            {
-                if (this.commonPath == null)
-                {
-                    this.commonPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Resources");
-                }
-                return this.commonPath;
-            }
-        }
+        private string CommonPath => commonPath ??
+                                     (commonPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Resources"));
 
         protected override int QueryClose(out bool canClose)
         {
-            IRecorderPrivate macroRecorder = (IRecorderPrivate)this.GetService(typeof(IRecorder));
+            var macroRecorder = (IRecorderPrivate)GetService(typeof(IRecorder));
             if (macroRecorder.IsRecording)
             {
-                string message = Resources.ExitMessage;
-                string caption = Resources.ExitCaption;
-                MessageBoxButtons buttons = MessageBoxButtons.YesNo;
-                System.Windows.Forms.DialogResult result;
+                var message = Resources.ExitMessage;
+                var caption = Resources.ExitCaption;
+                const MessageBoxButtons buttons = MessageBoxButtons.YesNo;
 
                 // Displays the MessageBox.
-                result = MessageBox.Show(message, caption, buttons);
-                canClose = (result == System.Windows.Forms.DialogResult.Yes);
+                var result = MessageBox.Show(message, caption, buttons);
+                canClose = (result == DialogResult.Yes);
             }
             else
             {
@@ -435,25 +379,19 @@ namespace VSMacros
                 Executor.Job.Close();
             }
 
-            return (int)VSConstants.S_OK;
+            return VSConstants.S_OK;
         }
 
         private void Record_OnBeforeQueryStatus(object sender, EventArgs e)
         {
             var recordCommand = sender as OleMenuCommand;
 
-            if (recordCommand != null)
-            {
-                IRecorderPrivate macroRecorder = (IRecorderPrivate)this.GetService(typeof(IRecorder));
-                if (macroRecorder.IsRecording)
-                {
-                    recordCommand.Text = Resources.MenuTextRecording;
-                }
-                else
-                {
-                    recordCommand.Text = Resources.MenuTextNormal;
-                }
-            }
+            if (recordCommand == null) return;
+
+            var macroRecorder = (IRecorderPrivate)GetService(typeof(IRecorder));
+            recordCommand.Text = macroRecorder.IsRecording
+                                    ? Resources.MenuTextRecording
+                                    : Resources.MenuTextNormal;
         }
     }
 }

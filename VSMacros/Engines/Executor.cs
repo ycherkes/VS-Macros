@@ -79,6 +79,7 @@ namespace VSMacros.Engines
 
         private void RegisterCommandDispatcherinROT()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             int hResult;
             System.Runtime.InteropServices.ComTypes.IBindCtx bc;
             hResult = NativeMethods.CreateBindCtx(0, out bc);
@@ -107,6 +108,7 @@ namespace VSMacros.Engines
 
         private void RegisterCmdNameMappinginROT()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             int hResult;
             System.Runtime.InteropServices.ComTypes.IBindCtx bc;
             hResult = NativeMethods.CreateBindCtx(0, out bc);
@@ -180,7 +182,12 @@ namespace VSMacros.Engines
         {
             if (IsServerReady() && IsExecutorReady())
             {
-                Server.SendFilePath(iterations, path);
+                Thread sendPath = new Thread(() =>
+                {
+                    Server.SendFilePath(iterations, path);
+                }
+                );
+                sendPath.Start();
             }
             else
             {

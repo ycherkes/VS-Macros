@@ -141,7 +141,6 @@ namespace VSMacros.Pipes
             {
                 BinaryFormatter formatter = new BinaryFormatter();
                 formatter.Serialize(ServerStream, PacketType.FilePath);
-
                 var filePath = new FilePath
                 {
                     Iterations = iterations,

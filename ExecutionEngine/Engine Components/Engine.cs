@@ -4,6 +4,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using EnvDTE80;
 using ExecutionEngine.Enums;
 using ExecutionEngine.Helpers;
 using ExecutionEngine.Interfaces;
@@ -26,7 +27,7 @@ namespace ExecutionEngine
         private readonly Site scriptSite;
         private object _dispatch;
 
-        public static object DteObject { get; private set; }
+        public static DTE2 DteObject { get; private set; }
         public static object CommandHelper { get; private set; }
 
         private static IMoniker GetItemMoniker(int pid, string version)
@@ -47,7 +48,7 @@ namespace ExecutionEngine
             return rot;
         }
 
-        private static object GetDteObject(IRunningObjectTable rot, IMoniker moniker)
+        private static DTE2 GetDteObject(IRunningObjectTable rot, IMoniker moniker)
         {
             int hr = rot.GetObject(moniker, out var dteObject);
             if (ErrorHandler.Failed(hr))
@@ -55,10 +56,10 @@ namespace ExecutionEngine
                 ErrorHandler.ThrowOnFailure(hr, null);
             }
 
-            return dteObject;
+            return dteObject as DTE2;
         }
 
-        private void InitializeDteObject(int pid, string version)
+        private static void InitializeDteObject(int pid, string version)
         {
             IMoniker moniker = GetItemMoniker(pid, version);
             IRunningObjectTable rot = GetRunningObjectTable();

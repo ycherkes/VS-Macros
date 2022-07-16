@@ -4,6 +4,11 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using EnvDTE80;
+using Microsoft.Internal.VisualStudio.Shell;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -11,10 +16,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.Internal.VisualStudio.Shell;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using VSMacros.ExecutionEngine.Pipes.Shared;
 using VSMacros.Helpers;
 using VSMacros.Interfaces;
@@ -43,16 +44,16 @@ namespace VSMacros.Engines
         #region Helpers
         internal void SendCompletionMessage(bool isError, string errorMessage)
         {
-            if (this.Complete != null)
+            if (Complete != null)
             {
                 var eventArgs = new CompletionReachedEventArgs(isError, errorMessage);
-                this.Complete(this, eventArgs);
+                Complete(this, eventArgs);
             }
         }
 
         internal void ResetMessages()
         {
-            this.Complete = null;
+            Complete = null;
         }
 
         private string ProvidePipeArguments(Guid guid, string version)
@@ -139,31 +140,31 @@ namespace VSMacros.Engines
         /// 
         public void InitializeEngine()
         {
-            this.RegisterCmdNameMappinginROT();
-            this.RegisterCommandDispatcherinROT();
+            RegisterCmdNameMappinginROT();
+            RegisterCommandDispatcherinROT();
 
             Server.InitializeServer();
-            Server.serverWait = new Thread(new ThreadStart(Server.WaitForMessage));
+            Server.serverWait = new Thread(Server.WaitForMessage);
             Server.serverWait.Start();
 
-            EnvDTE.DTE dte = ((IServiceProvider)VSMacrosPackage.Current).GetService(typeof(SDTE)) as EnvDTE.DTE;
+            DTE2 dte = ((IServiceProvider)VSMacrosPackage.Current).GetService(typeof(SDTE)) as DTE2;
             string version = dte.Version;
-
-            Executor.executionEngine = new Process();
-            string exeFileName = version.StartsWith("14.") ? "VS2015\\VisualStudio2015.Macros.ExecutionEngine.exe" : "VisualStudio.Macros.ExecutionEngine.exe";
+            executionEngine = new Process();
+            string exeFileName = "VisualStudio.Macros.ExecutionEngine.exe";
             string processName = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), exeFileName);
-            Executor.executionEngine.StartInfo.FileName = processName;
-            Executor.executionEngine.StartInfo.UseShellExecute = false;
-            Executor.executionEngine.StartInfo.Arguments = ProvidePipeArguments(Server.Guid, version);
-            Executor.executionEngine.Start();
+            executionEngine.StartInfo.FileName = processName;
+            executionEngine.StartInfo.UseShellExecute = false;
+            executionEngine.StartInfo.CreateNoWindow = true;
+            executionEngine.StartInfo.Arguments = ProvidePipeArguments(Server.Guid, version);
+            executionEngine.Start();
 
-            Executor.Job = JobHandle.CreateNewJob();
-            Executor.Job.AddProcess(Executor.executionEngine);
+            Job = JobHandle.CreateNewJob();
+            Job.AddProcess(executionEngine);
         }
 
         private static bool IsExecutorReady()
         {
-            return Executor.executionEngine != null && !Executor.executionEngine.HasExited;
+            return executionEngine != null && !executionEngine.HasExited;
         }
 
         private static bool IsServerReady()
@@ -183,7 +184,7 @@ namespace VSMacros.Engines
             }
             else
             {
-                this.InitializeEngine();
+                InitializeEngine();
                 Thread waitForConnection = new Thread(() =>
                     {
                         WaitForConnection();
@@ -193,7 +194,7 @@ namespace VSMacros.Engines
                 waitForConnection.Start();
             }
 
-            this.IsEngineRunning = true;
+            IsEngineRunning = true;
         }
 
         private static void WaitForConnection()
@@ -203,8 +204,8 @@ namespace VSMacros.Engines
 
         public void StopEngine()
         {
-            Executor.Job.Close();   
-            this.IsEngineRunning = false;
+            Job.Close();
+            IsEngineRunning = false;
         }
     }
 }

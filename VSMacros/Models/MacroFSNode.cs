@@ -4,6 +4,9 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Imaging.Interop;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,10 +14,9 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
 using VSMacros.Engines;
 using GelUtilities = Microsoft.Internal.VisualStudio.PlatformUI.Utilities;
 
@@ -24,11 +26,12 @@ namespace VSMacros.Models
     {
         // HashSet containing the enabled directories
         private static HashSet<string> enabledDirectories = new HashSet<string>();
-        public static HashSet<string> EnabledDirectories { 
-            get 
-            { 
-                return MacroFSNode.enabledDirectories; 
-            } 
+        public static HashSet<string> EnabledDirectories
+        {
+            get
+            {
+                return MacroFSNode.enabledDirectories;
+            }
 
             set
             {
@@ -78,12 +81,12 @@ namespace VSMacros.Models
         public string FullPath
         {
             get
-            { 
+            {
                 return this.fullPath;
             }
 
-            set 
-            { 
+            set
+            {
                 this.fullPath = value;
                 this.NotifyPropertyChanged("FullPath");
                 this.NotifyPropertyChanged("Name");
@@ -177,7 +180,7 @@ namespace VSMacros.Models
             {
                 if (this.shortcut == MacroFSNode.ToFetch)
                 {
-                    
+
                     this.shortcut = MacroFSNode.None;
 
                     // Find shortcut, if it exists
@@ -187,7 +190,7 @@ namespace VSMacros.Models
                         {
                             this.shortcut = i;
                         }
-                    }                  
+                    }
                 }
 
                 if (this.shortcut != MacroFSNode.None)
@@ -226,17 +229,26 @@ namespace VSMacros.Models
                             Int32Rect.Empty,
                             BitmapSizeOptions.FromEmptyOptions());
                 }
-                else
+
+                IVsImageService2 imageService = (IVsImageService2)((IServiceProvider)VSMacrosPackage.Current).GetService(typeof(SVsImageService));
+                if (imageService != null)
                 {
-                    IVsImageService imageService = (IVsImageService)((IServiceProvider)VSMacrosPackage.Current).GetService(typeof(SVsImageService));
-                    if (imageService != null)
+                    //IVsUIObject uiObject = imageService.GetIconForFile(Path.GetFileName(this.FullPath), __VSUIDATAFORMAT.VSDF_WPF);
+                    ImageMoniker imageMoniker = imageService.GetImageMonikerForFile(Path.GetFileName(this.FullPath));
+                    IVsUIObject uiObject = imageService.GetImage(imageMoniker, new ImageAttributes
                     {
-                        IVsUIObject uiObject = imageService.GetIconForFile(Path.GetFileName(this.FullPath), __VSUIDATAFORMAT.VSDF_WPF);
-                        if (uiObject != null)
-                        {
-                            BitmapSource bitmapSource = GelUtilities.GetObjectData(uiObject) as BitmapSource;
-                            return bitmapSource;
-                        }
+                        Format = (uint)__VSUIDATAFORMAT.VSDF_WPF,
+                        Flags = (uint)_ImageAttributesFlags.IAF_RequiredFlags,
+                        StructSize = Marshal.SizeOf(typeof(ImageAttributes)),
+                        ImageType = (uint)_UIImageType.IT_Bitmap,
+                        LogicalHeight = 50,
+                        LogicalWidth = 50
+                    });
+
+                    if (uiObject != null)
+                    {
+                        BitmapSource bitmapSource = GelUtilities.GetObjectData(uiObject) as BitmapSource;
+                        return bitmapSource;
                     }
                 }
 
@@ -247,9 +259,9 @@ namespace VSMacros.Models
 
         public bool IsEditable
         {
-            get 
-            { 
-                return this.isEditable; 
+            get
+            {
+                return this.isEditable;
             }
 
             set
@@ -289,7 +301,7 @@ namespace VSMacros.Models
                     if (this.IsExpanded)
                     {
 
-                            MacroFSNode.enabledDirectories.Add(this.FullPath);
+                        MacroFSNode.enabledDirectories.Add(this.FullPath);
 
                         // Expand parent as well
                         if (this.parent != null)
@@ -300,7 +312,7 @@ namespace VSMacros.Models
                     else
                     {
 
-                            MacroFSNode.enabledDirectories.Remove(this.FullPath);
+                        MacroFSNode.enabledDirectories.Remove(this.FullPath);
                     }
 
                     this.NotifyPropertyChanged("IsExpanded");
@@ -405,17 +417,17 @@ namespace VSMacros.Models
         private ObservableCollection<MacroFSNode> GetChildNodes()
         {
             var files = from childFile in Directory.GetFiles(this.FullPath)
-                       where Path.GetExtension(childFile) == ".js"
-                       where childFile != Manager.CurrentMacroPath
-                       orderby childFile
-                       select childFile;
+                        where Path.GetExtension(childFile) == ".js"
+                        where childFile != Manager.CurrentMacroPath
+                        orderby childFile
+                        select childFile;
 
             var directories = from childDirectory in Directory.GetDirectories(this.FullPath)
                               orderby childDirectory
                               select childDirectory;
 
             // Merge files and directories into a collection
-            ObservableCollection<MacroFSNode> collection = 
+            ObservableCollection<MacroFSNode> collection =
                 new ObservableCollection<MacroFSNode>(
                     files.Union(directories)
                          .Select((item) => new MacroFSNode(item, this)));

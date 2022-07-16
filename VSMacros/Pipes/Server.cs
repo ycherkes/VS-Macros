@@ -28,23 +28,24 @@ namespace VSMacros.Pipes
 
         public static void InitializeServer()
         {
-            Server.Guid = Guid.NewGuid();
-            var guid = Server.Guid.ToString();
-            Server.ServerStream = new NamedPipeServerStream(
-                pipeName:guid, 
-                direction: PipeDirection.InOut, 
-                maxNumberOfServerInstances: 1, 
-                transmissionMode: PipeTransmissionMode.Byte, 
+            Guid = Guid.NewGuid();
+            var guid = Guid.ToString();
+            ServerStream = new NamedPipeServerStream(
+                pipeName: guid,
+                direction: PipeDirection.InOut,
+                maxNumberOfServerInstances: 1,
+                transmissionMode: PipeTransmissionMode.Byte,
                 options: PipeOptions.Asynchronous);
         }
 
-        private static void SendEngineFailedSilentlyCompletionMessage() {
-            Server.executor.SendCompletionMessage(isError: false, errorMessage: string.Empty);
+        private static void SendEngineFailedSilentlyCompletionMessage()
+        {
+            executor.SendCompletionMessage(isError: false, errorMessage: string.Empty);
         }
 
         public static void WaitForMessage()
         {
-            Server.ServerStream.WaitForConnection();
+            ServerStream.WaitForConnection();
 
             var formatter = new BinaryFormatter();
             formatter.Binder = new BinderHelper();
@@ -60,12 +61,12 @@ namespace VSMacros.Pipes
 
                 try
                 {
-                    var type = (PacketType)formatter.Deserialize(Server.ServerStream);
+                    var type = (PacketType)formatter.Deserialize(ServerStream);
 
                     switch (type)
                     {
                         case PacketType.Empty:
-                            Server.executor.IsEngineRunning = false;
+                            executor.IsEngineRunning = false;
                             shouldKeepRunning = false;
                             break;
 
@@ -74,17 +75,17 @@ namespace VSMacros.Pipes
                             break;
 
                         case PacketType.Success:
-                            Server.executor.SendCompletionMessage(isError: false, errorMessage: string.Empty);
+                            executor.SendCompletionMessage(isError: false, errorMessage: string.Empty);
                             break;
 
                         case PacketType.GenericScriptError:
-                            string error = Server.GetGenericScriptError(Server.ServerStream);
-                            Server.executor.SendCompletionMessage(isError: true, errorMessage: error);
+                            string error = GetGenericScriptError(ServerStream);
+                            executor.SendCompletionMessage(isError: true, errorMessage: error);
                             break;
 
                         case PacketType.CriticalError:
-                            error = Server.GetCriticalError(Server.ServerStream);
-                            Server.ServerStream.Close();
+                            error = GetCriticalError(ServerStream);
+                            ServerStream.Close();
                             CloseExecutorJob();
                             shouldKeepRunning = false;
                             break;
@@ -93,7 +94,7 @@ namespace VSMacros.Pipes
                 catch (System.Runtime.Serialization.SerializationException)
                 {
                 }
-            } 
+            }
         }
 
         private static void CloseExecutorJob()
@@ -108,11 +109,11 @@ namespace VSMacros.Pipes
         {
             var formatter = new BinaryFormatter();
             formatter.Binder = new BinderHelper();
-            var scriptError = (GenericScriptError)formatter.Deserialize(Server.ServerStream);
+            var scriptError = (GenericScriptError)formatter.Deserialize(ServerStream);
 
             int lineNumber = scriptError.LineNumber;
             int column = scriptError.Column;
-            string source = string.Format(Resources.MacroFileError, Server.executor.CurrentlyExecutingMacro);
+            string source = string.Format(Resources.MacroFileError, executor.CurrentlyExecutingMacro);
             string description = scriptError.Description;
             string period = description[description.Length - 1] == '.' ? string.Empty : ".";
 
@@ -123,7 +124,7 @@ namespace VSMacros.Pipes
         private static string GetCriticalError(NamedPipeServerStream serverStream)
         {
             var formatter = new BinaryFormatter();
-            var criticalError = (CriticalError)formatter.Deserialize(Server.ServerStream);
+            var criticalError = (CriticalError)formatter.Deserialize(ServerStream);
 
             string message = criticalError.Message;
             string source = criticalError.StackTrace;
@@ -138,14 +139,15 @@ namespace VSMacros.Pipes
         {
             try
             {
-                var type = PacketType.FilePath;
                 BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(Server.ServerStream, type);
+                formatter.Serialize(ServerStream, PacketType.FilePath);
 
-                var filePath = new FilePath();
-                filePath.Iterations = iterations;
-                filePath.Path = path;
-                formatter.Serialize(Server.ServerStream, filePath);
+                var filePath = new FilePath
+                {
+                    Iterations = iterations,
+                    Path = path
+                };
+                formatter.Serialize(ServerStream, filePath);
             }
             catch (Exception)
             {

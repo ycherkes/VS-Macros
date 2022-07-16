@@ -3,4 +3,3 @@
 var textSelection = dte.ActiveDocument.Selection;
 textSelection.SelectLine();
 dte.ExecuteCommand("Edit.Find");
-dte.Find.FindWhat = textSelection.Text;

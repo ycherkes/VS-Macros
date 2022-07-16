@@ -4,20 +4,22 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Windows.Media.Imaging;
 using EnvDTE;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.CommandBars;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.Design;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Windows.Media.Imaging;
 using VSMacros.Engines;
 using VSMacros.Interfaces;
 using VSMacros.Model;
@@ -26,7 +28,7 @@ namespace VSMacros
 {
     [Guid(GuidList.GuidVSMacrosPkgString)]
     [ProvideToolWindow(typeof(MacrosToolWindow), Style = VsDockStyle.Tabbed, Window = "3ae79031-e1bc-11d0-8f78-00a0c9110057")]
-    public sealed class VSMacrosPackage : Package
+    public sealed class VSMacrosPackage : AsyncPackage
     {
         private static VSMacrosPackage current;
         public static VSMacrosPackage Current
@@ -112,9 +114,9 @@ namespace VSMacros
             }
         }
 
-        protected override void Initialize()
+        protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            base.Initialize();
+            await base.InitializeAsync(cancellationToken, progress);
 
             ((IServiceContainer)this).AddService(typeof(IRecorder), (serviceContainer, type) => { return new Recorder(this); }, promote: true);
             this.statusBar = (IVsStatusbar)GetService(typeof(SVsStatusbar));

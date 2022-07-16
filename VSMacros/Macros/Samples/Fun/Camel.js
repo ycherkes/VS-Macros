@@ -4,7 +4,7 @@
 if (dte.UndoContext.IsOpen)
     dte.UndoContext.Close();
 
-dte.UndoContext.Open("Camel");
+dte.UndoContext.Open("Camel", false);
 
 var camel =
 [

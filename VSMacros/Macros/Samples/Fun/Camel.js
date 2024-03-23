@@ -4,23 +4,25 @@
 if (dte.UndoContext.IsOpen)
     dte.UndoContext.Close();
 
-dte.UndoContext.Open("Camel", false);
+dte.UndoContext.Open("Camel");
 
 var camel =
-[
-'     //',
-'   _oo\\',
-'  (__/ \\ ',
-'     \\  \\/ \\/ \\',
-'     (         )\\',
-'      \_______/  \\',
-'       [[] [[]',
-'       [[] [[]'
-].join('\n');
+    [
+        '     //',
+        '   _oo\\',
+        '  (__/ \\ ',
+        '     \\  \\/ \\/ \\',
+        '     (         )\\',
+        '      \_______/  \\',
+        '       [[] [[]',
+        '       [[] [[]'
+    ].join('\n');
 
-Macro.InsertText("/*\n*/");
+//Macro.InsertText("/*\n*/");
+dte.ActiveDocument.Selection.Insert("/*\n*/");
 dte.ExecuteCommand("Edit.LineOpenAbove");
 dte.ActiveDocument.Selection.StartOfLine();
-Macro.InsertText(camel);
+//Macro.InsertText(camel);
+dte.ActiveDocument.Selection.Insert(camel);
 
 dte.UndoContext.Close();

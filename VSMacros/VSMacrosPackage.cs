@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
+using EnvDTE80;
 using VSMacros.Engines;
 using VSMacros.Interfaces;
 using VSMacros.Model;
@@ -250,7 +251,7 @@ namespace VSMacros
         private void AddMenuButton()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            DTE dte = (DTE)GetService(typeof(SDTE));
+            DTE2 dte = (DTE2)GetService(typeof(SDTE));
             CommandBar mainMenu = ((CommandBars)dte.CommandBars)["MenuBar"];
             CommandBarPopup toolMenu = (CommandBarPopup)mainMenu.Controls["Tools"];
             CommandBarPopup macroMenu = (CommandBarPopup)toolMenu.Controls["Macros"];

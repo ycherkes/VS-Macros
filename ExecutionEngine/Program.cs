@@ -124,6 +124,11 @@ namespace ExecutionEngine
         {
             try
             {
+                //if (!Debugger.IsAttached)
+                //{
+                //    Debugger.Launch();
+                //}
+
                 string[] separatedArgs = InputParser.SeparateArgs(args);
                 RunFromPipe(separatedArgs);
             }

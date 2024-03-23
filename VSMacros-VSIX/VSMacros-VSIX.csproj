@@ -48,23 +48,35 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ExecutionEngine\Microsoft.VisualStudio.GraphModel.dll">
+    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.GraphModel.dll">
+      <Link>ExecutionEngine\Microsoft.VisualStudio.GraphModel.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="ExecutionEngine\Microsoft.VisualStudio.Interop.dll">
+    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Interop.dll">
+      <Link>ExecutionEngine\Microsoft.VisualStudio.Interop.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="ExecutionEngine\Microsoft.VisualStudio.Shell.Framework.dll">
+    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Shell.Framework.dll">
+      <Link>ExecutionEngine\Microsoft.VisualStudio.Shell.Framework.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="ExecutionEngine\Microsoft.VisualStudio.Threading.dll">
+    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Threading.dll">
+      <Link>ExecutionEngine\Microsoft.VisualStudio.Threading.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="ExecutionEngine\Microsoft.VisualStudio.Utilities.dll">
+    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Utilities.dll">
+      <Link>ExecutionEngine\Microsoft.VisualStudio.Utilities.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="ExecutionEngine\Microsoft.VisualStudio.Validation.dll">
+    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Validation.dll">
+      <Link>ExecutionEngine\Microsoft.VisualStudio.Validation.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>.\</VSIXSubPath>
     </Content>
     <Content Include="MacroIcon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -82,14 +94,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <None Include="app.config" />
-    <None Include="packages.config" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
-    <Content Include="VisualStudio.Macros.ExecutionEngine.exe.config">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <FilesToSign Include="$(OutDir)\VSMacros.vsix">
@@ -105,19 +112,4 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props'))" />
-    <Error Condition="!Exists('..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets'))" />
-  </Target>
-  <Import Project="..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets" Condition="Exists('..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.targets')" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

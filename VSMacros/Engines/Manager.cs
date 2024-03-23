@@ -15,6 +15,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using EnvDTE80;
 using VSMacros.Dialogs;
 using VSMacros.Interfaces;
 using VSMacros.Models;
@@ -54,7 +55,7 @@ namespace VSMacros.Engines
 
         private IServiceProvider serviceProvider;
         private IVsUIShell uiShell;
-        private DTE dte;
+        private DTE2 dte;
 
         private IRecorder recorder;
 
@@ -65,7 +66,7 @@ namespace VSMacros.Engines
             ThreadHelper.ThrowIfNotOnUIThread();
             serviceProvider = provider;
             uiShell = (IVsUIShell)provider.GetService(typeof(SVsUIShell));
-            dte = (DTE)provider.GetService(typeof(SDTE));
+            dte = (DTE2)provider.GetService(typeof(SDTE));
             recorder = (IRecorder)serviceProvider.GetService(typeof(IRecorder));
 
             LoadShortcuts();

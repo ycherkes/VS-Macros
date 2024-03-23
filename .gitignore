@@ -159,3 +159,4 @@ $RECYCLE.BIN/
 # JetBrains project files
 .idea
 *.iml
+/.vs

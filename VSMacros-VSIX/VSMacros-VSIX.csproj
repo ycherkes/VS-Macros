@@ -48,32 +48,32 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.GraphModel.dll">
+    <Content Include="..\ExecutionEngine\bin\$(Configuration)\Microsoft.VisualStudio.GraphModel.dll">
       <Link>ExecutionEngine\Microsoft.VisualStudio.GraphModel.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
       <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Interop.dll">
+    <Content Include="..\ExecutionEngine\bin\$(Configuration)\Microsoft.VisualStudio.Interop.dll">
       <Link>ExecutionEngine\Microsoft.VisualStudio.Interop.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
       <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Shell.Framework.dll">
+    <Content Include="..\ExecutionEngine\bin\$(Configuration)\Microsoft.VisualStudio.Shell.Framework.dll">
       <Link>ExecutionEngine\Microsoft.VisualStudio.Shell.Framework.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
       <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Threading.dll">
+    <Content Include="..\ExecutionEngine\bin\$(Configuration)\Microsoft.VisualStudio.Threading.dll">
       <Link>ExecutionEngine\Microsoft.VisualStudio.Threading.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
       <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Utilities.dll">
+    <Content Include="..\ExecutionEngine\bin\$(Configuration)\Microsoft.VisualStudio.Utilities.dll">
       <Link>ExecutionEngine\Microsoft.VisualStudio.Utilities.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
       <VSIXSubPath>.\</VSIXSubPath>
     </Content>
-    <Content Include="..\ExecutionEngine\bin\Release\Microsoft.VisualStudio.Validation.dll">
+    <Content Include="..\ExecutionEngine\bin\$(Configuration)\Microsoft.VisualStudio.Validation.dll">
       <Link>ExecutionEngine\Microsoft.VisualStudio.Validation.dll</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
       <VSIXSubPath>.\</VSIXSubPath>

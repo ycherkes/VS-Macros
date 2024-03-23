@@ -141,6 +141,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Key.snk" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSMacros.vsct">
@@ -274,11 +275,6 @@
       <Project>{f73f9e75-10e3-44fc-9a13-7e69a689ad0b}</Project>
       <Name>ExecutionEngine</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.SDK">
-      <Version>17.9.37000</Version>
-    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <FilesToSign Include="$(OutDir)\VSMacros.dll">

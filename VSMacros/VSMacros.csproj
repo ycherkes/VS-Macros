@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
   <Import Project="..\packages\Microsoft.VisualStudioEng.MicroBuild.Core.1.0.0\build\Microsoft.VisualStudioEng.MicroBuild.Core.props" Condition="Exists('..\packages\Microsoft.VisualStudioEng.MicroBuild.Core.1.0.0\build\Microsoft.VisualStudioEng.MicroBuild.Core.props')" />
   <Import Project="..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props" Condition="Exists('..\packages\MicroBuild.Core.0.2.0\build\MicroBuild.Core.props')" />
@@ -141,7 +141,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Key.snk" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSMacros.vsct">
@@ -275,6 +274,11 @@
       <Project>{f73f9e75-10e3-44fc-9a13-7e69a689ad0b}</Project>
       <Name>ExecutionEngine</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.SDK">
+      <Version>17.9.37000</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <FilesToSign Include="$(OutDir)\VSMacros.dll">

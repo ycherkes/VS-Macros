@@ -4,10 +4,10 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using System;
 using Microsoft.Internal.VisualStudio.Shell;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell.Interop;
+using System;
 using VSMacros.Engines;
 using VSMacros.Interfaces;
 using VSMacros.Model;
@@ -31,6 +31,7 @@ namespace VSMacros.RecorderListeners
 
         internal WindowActivationWatcher(IServiceProvider serviceProvider, RecorderDataModel dataModel)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             Validate.IsNotNull(serviceProvider, "serviceProvider");
             Validate.IsNotNull(dataModel, "dataModel");
 
@@ -49,6 +50,7 @@ namespace VSMacros.RecorderListeners
 
         public int OnElementValueChanged(uint elementid, object varValueOld, object varValueNew)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             var elementId = (VSConstants.VSSELELEMID)elementid;
             if (elementId == VSConstants.VSSELELEMID.SEID_WindowFrame)
             {
@@ -133,6 +135,7 @@ namespace VSMacros.RecorderListeners
 
         public void Dispose()
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             if (this.monSelCookie != 0U && this.serviceProvider != null)
             {
                 var monSel = (IVsMonitorSelection)this.serviceProvider.GetService(typeof(SVsShellMonitorSelection));

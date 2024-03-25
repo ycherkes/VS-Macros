@@ -4,10 +4,11 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
 using VSMacros.Models;
 
 namespace VSMacros
@@ -23,29 +24,24 @@ namespace VSMacros
         {
             get
             {
-                if (FileChangeMonitor.instance == null)
+                if (instance == null)
                 {
-                    FileChangeMonitor.instance = new FileChangeMonitor(VSMacrosPackage.Current);
+                    instance = new FileChangeMonitor(VSMacrosPackage.Current);
                 }
 
-                return FileChangeMonitor.instance;
+                return instance;
             }
         }
 
-        public IVsFileChangeEx FileChangeService
-        {
-            get
-            {
-                return this.fileChangeService;
-            }
-        }
+        public IVsFileChangeEx FileChangeService => fileChangeService;
 
         private FileChangeMonitor(IServiceProvider serviceProvider)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             IVsFileChangeEx fileChangeService = serviceProvider.GetService(typeof(SVsFileChangeEx)) as IVsFileChangeEx;
             this.fileChangeService = fileChangeService;
 
-            this.cookies = new Dictionary<string, uint>();
+            cookies = new Dictionary<string, uint>();
         }
 
         #region Monitor and Unmonitor
@@ -56,8 +52,9 @@ namespace VSMacros
         /// <param name="path">
         /// Folder to monitor.
         /// </param>
-        public void MonitorFolder(string path)
+        private void MonitorFolder(string path)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             uint cookie;
 
             FileChangeService.AdviseDirChange(
@@ -67,7 +64,7 @@ namespace VSMacros
                 out cookie
                 );
 
-            this.cookies[path] = cookie;
+            cookies[path] = cookie;
         }
 
         /// <summary>
@@ -76,17 +73,17 @@ namespace VSMacros
         /// <param name="path">
         /// Full path to the file to monitor.
         /// </param>
-        public void MonitorFile(string path)
+        private void MonitorFile(string path)
         {
             uint cookie;
-
+            ThreadHelper.ThrowIfNotOnUIThread();
             FileChangeService.AdviseFileChange(
                 path,
                 (uint)(_VSFILECHANGEFLAGS.VSFILECHG_Add | _VSFILECHANGEFLAGS.VSFILECHG_Attr | _VSFILECHANGEFLAGS.VSFILECHG_Del),
                 this,
                 out cookie);
 
-            this.cookies[path] = cookie;
+            cookies[path] = cookie;
         }
 
         /// <summary>
@@ -98,11 +95,11 @@ namespace VSMacros
         {
             if (isDirectory)
             {
-                this.MonitorFolder(path);
+                MonitorFolder(path);
             }
             else
             {
-                this.MonitorFile(path);
+                MonitorFile(path);
             }
         }
 
@@ -112,10 +109,10 @@ namespace VSMacros
         /// <param name="path">
         /// Full path to the directory.
         /// </param>
-        public void UnmonitorFolder(string path)
+        private void UnmonitorFolder(string path)
         {
-            uint cookie = this.cookies[path];
-
+            uint cookie = cookies[path];
+            ThreadHelper.ThrowIfNotOnUIThread();
             FileChangeService.UnadviseDirChange(cookie);
         }
 
@@ -125,10 +122,10 @@ namespace VSMacros
         /// <param name="path">
         /// Full path to the file.
         /// </param>
-        public void UnmonitorFile(string path)
+        private void UnmonitorFile(string path)
         {
-            uint cookie = this.cookies[path];
-
+            uint cookie = cookies[path];
+            ThreadHelper.ThrowIfNotOnUIThread();
             FileChangeService.UnadviseFileChange(cookie);
         }
 
@@ -141,11 +138,11 @@ namespace VSMacros
         {
             if (isDirectory)
             {
-                this.UnmonitorFolder(path);
+                UnmonitorFolder(path);
             }
             else
             {
-                this.UnmonitorFile(path);
+                UnmonitorFile(path);
             }
         }
 
@@ -161,7 +158,7 @@ namespace VSMacros
         public int DirectoryChanged(string dir)
         {
             MacroFSNode node = MacroFSNode.FindNodeFromFullPath(dir);
-            if(node != null)
+            if (node != null)
             {
                 // Refresh tree rooted at the changed directory
                 MacroFSNode.RefreshTree(node);
@@ -194,8 +191,8 @@ namespace VSMacros
                 if (change == _VSFILECHANGEFLAGS.VSFILECHG_Del)
                 {
                     MacroFSNode node = MacroFSNode.FindNodeFromFullPath(path);
-                    if(node != null)
-                    { 
+                    if (node != null)
+                    {
                         node.Delete();
                     }
                 }

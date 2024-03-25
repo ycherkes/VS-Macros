@@ -4,11 +4,11 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using ExecutionEngine.Helpers;
+using Microsoft.Internal.VisualStudio.Shell;
 using System;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
-using ExecutionEngine.Helpers;
-using Microsoft.Internal.VisualStudio.Shell;
 using VisualStudio.Macros.ExecutionEngine.Pipes;
 using VSMacros.ExecutionEngine.Pipes;
 
@@ -23,11 +23,11 @@ namespace ExecutionEngine
         internal static void RunMacro(string script, int iterations)
         {
             Validate.IsNotNullAndNotEmpty(script, "script");
-            Program.engine.Parse(script);
+            engine.Parse(script);
 
             for (int i = 0; i < iterations; i++)
             {
-                bool successfulCompletion = Program.engine.CallMethod(Program.MacroName);
+                bool successfulCompletion = engine.CallMethod(MacroName);
                 if (!successfulCompletion)
                 {
                     if (Site.RuntimeError)
@@ -39,7 +39,7 @@ namespace ExecutionEngine
                     }
                     else
                     {
-                        var e = Site.InternalVSException;
+                        var e = Site.InternalVsException;
                         Client.SendCriticalError(e.Message, e.Source, e.StackTrace, e.TargetSite.ToString());
                     }
                     Site.ResetError();
@@ -52,7 +52,7 @@ namespace ExecutionEngine
 
         private static void HandleInput()
         {
-            var type = (PacketType)Program.serializer.Deserialize(Client.ClientStream);
+            var type = (PacketType)serializer.Deserialize(Client.ClientStream);
 
             switch (type)
             {
@@ -64,12 +64,12 @@ namespace ExecutionEngine
 
         private static void HandleFilePath()
         {
-            var filePath = (FilePath)Program.serializer.Deserialize(Client.ClientStream);
+            var filePath = (FilePath)serializer.Deserialize(Client.ClientStream);
             int iterations = filePath.Iterations;
             string message = filePath.Path;
             string unwrappedScript = InputParser.ExtractScript(message);
             string wrappedScript = InputParser.WrapScript(unwrappedScript);
-            Program.RunMacro(wrappedScript, iterations);
+            RunMacro(wrappedScript, iterations);
         }
 
         internal static Thread CreateReadingExecutingThread(int pid, string version)
@@ -78,9 +78,9 @@ namespace ExecutionEngine
             {
                 try
                 {
-                    Program.serializer = new BinaryFormatter();
-                    Program.serializer.Binder = new BinderHelper();
-                    Program.engine = new Engine(pid, version);
+                    serializer = new BinaryFormatter();
+                    serializer.Binder = new BinderHelper();
+                    engine = new Engine(pid, version);
 
                     while (true)
                     {
@@ -124,6 +124,11 @@ namespace ExecutionEngine
         {
             try
             {
+                //if (!Debugger.IsAttached)
+                //{
+                //    Debugger.Launch();
+                //}
+
                 string[] separatedArgs = InputParser.SeparateArgs(args);
                 RunFromPipe(separatedArgs);
             }

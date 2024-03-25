@@ -4,12 +4,12 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using ExecutionEngine.Enums;
+using ExecutionEngine.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
-using ExecutionEngine.Enums;
-using ExecutionEngine.Interfaces;
 using VisualStudio.Macros.ExecutionEngine;
 using VSMacros.ExecutionEngine;
 
@@ -17,35 +17,30 @@ namespace ExecutionEngine
 {
     internal sealed class Site : IActiveScriptSite
     {
-        private const int TypeEElementNotFound = unchecked((int)(0x8002802B));
+        private const int TypeEElementNotFound = unchecked((int)0x8002802B);
         private const string Dte = "dte";
         private const string CmdHelper = "cmdHelper";
         private Dictionary<string, object> objectsEngineKnowsAbout;
         private Dictionary<string, string> errorMessages;
         internal static bool RuntimeError;
         internal static RuntimeException RuntimeException;
-        internal static bool InternalError;
-        internal static InternalVSException InternalVSException;
+        internal static InternalVsException InternalVsException;
 
         public void GetLCID(out int lcid)
         {
             lcid = Thread.CurrentThread.CurrentCulture.LCID;
         }
 
-        private static void CreateInternalVSException(string message)
+        private static void CreateInternalVsException(string message)
         {
             string source = "VSMacros.ExecutionEngine";
             string stackTrace = string.Empty;
             string targetSite = string.Empty;
-            Site.InternalVSException = new InternalVSException(message, source, stackTrace, targetSite);
-            Site.InternalError = true;
+            InternalVsException = new InternalVsException(message, source, stackTrace, targetSite);
         }
 
         public void GetItemInfo(string name, ScriptInfo returnMask, out IntPtr item, IntPtr typeInfo)
         {
-            string errorMessage;
-            object objectEngineKnowsAbout;
-
             EnsureDictionariesAreInitialized();
 
             if ((returnMask & ScriptInfo.ITypeInfo) == ScriptInfo.ITypeInfo)
@@ -53,13 +48,13 @@ namespace ExecutionEngine
                 throw new NotImplementedException();
             }
 
-            if (objectsEngineKnowsAbout.TryGetValue(name, out objectEngineKnowsAbout))
+            if (objectsEngineKnowsAbout.TryGetValue(name, out var objectEngineKnowsAbout))
             {
                 item = Marshal.GetIUnknownForObject(objectEngineKnowsAbout);
             }
-            else if (errorMessages.TryGetValue(name, out errorMessage))
+            else if (errorMessages.TryGetValue(name, out var errorMessage))
             {
-                CreateInternalVSException(errorMessage);
+                CreateInternalVsException(errorMessage);
                 item = IntPtr.Zero;
             }
             else
@@ -108,17 +103,16 @@ namespace ExecutionEngine
         {
         }
 
-        public void OnStateChange(Enums.ScriptState scriptState)
+        public void OnStateChange(ScriptState scriptState)
         {
         }
 
         public static void ResetError()
         {
-            Site.RuntimeError = false;
-            Site.RuntimeException = null;
+            RuntimeError = false;
+            RuntimeException = null;
 
-            Site.InternalError = false;
-            Site.InternalVSException = null;
+            InternalVsException = null;
         }
 
         private static string GetErrorDescription(System.Runtime.InteropServices.ComTypes.EXCEPINFO exceptionInfo)
@@ -137,18 +131,13 @@ namespace ExecutionEngine
 
         public void OnScriptError(IActiveScriptError scriptError)
         {
-            uint sourceContext;
-            uint lineNumber;
-            int column;
-            System.Runtime.InteropServices.ComTypes.EXCEPINFO exceptionInfo;
-
-            scriptError.GetSourcePosition(out sourceContext, out lineNumber, out column);
-            scriptError.GetExceptionInfo(out exceptionInfo);
+            scriptError.GetSourcePosition(out _, out var lineNumber, out var column);
+            scriptError.GetExceptionInfo(out var exceptionInfo);
             string source = exceptionInfo.bstrSource;
             string description = GetErrorDescription(exceptionInfo);
 
-            Site.RuntimeError = true;
-            Site.RuntimeException = new RuntimeException(description, source, lineNumber, column);
+            RuntimeError = true;
+            RuntimeException = new RuntimeException(description, source, lineNumber, column);
         }
 
         public void OnEnterScript()

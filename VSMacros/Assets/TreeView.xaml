@@ -1,14 +1,15 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:imaging="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Imaging"
-                    xmlns:vsui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.12.0"
                     xmlns:converters="clr-namespace:MicrosoftCorporation.VSMacros.Converters"
-                    xmlns:local="clr-namespace:VSMacros">
+                    xmlns:local="clr-namespace:VSMacros"
+                    xmlns:platformUi="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Utilities"
+                    xmlns:vsui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0">
 
     <!-- A converter used to set ImageThemingUtilities.ImageBackgroundColor -->
-    <vsui:BrushToColorConverter x:Uid="BrushToColorConverter" x:Key="BrushToColorConverter" />
+    <platformUi:BrushToColorConverter x:Uid="BrushToColorConverter" x:Key="BrushToColorConverter" />
 
-    <vsui:ThemedImageConverter x:Key="ThemedImageConverter" />
+    <imaging:ThemedImageConverter x:Key="ThemedImageConverter" />
     <converters:DepthToMarginConverter x:Key="DepthConverter" />
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 

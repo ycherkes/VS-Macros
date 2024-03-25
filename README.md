@@ -1,4 +1,7 @@
-﻿# Macros for Visual Studio
+﻿## [Not maintained]
+This extension was originally created by a group of interns on the Visual Studio team. It is no longer maintained. 
+
+# Macros for Visual Studio
 
 An extension for Visual Studio that enables the use of macros to automate repetitive tasks in the IDE. The extension can record most of the commands in Visual Studio including text editing operations.
 
@@ -32,6 +35,9 @@ You can then playback the macro (CTRL+M, Enter) or play it back multiple times (
 ![Convert private variables to public fields](Demos/MacrosDemo.gif)
 
 ## Getting Started
+To install the extension, download and run the VSIX available from the Marketplace at this link:
+[https://marketplace.visualstudio.com/items?itemName=VisualStudioPlatformTeam.MacrosforVisualStudio](https://marketplace.visualstudio.com/items?itemName=VisualStudioPlatformTeam.MacrosforVisualStudio).
+Alternatively, from within Visual Studio open `Tools > Extensions and Updates` and search for `Macros for Visual Studio`.
 
 After installing the extension, the Macro menu will appear under `Tools > Macros`. Under this menu, you'll find commands to record and playback a macro.
 
@@ -130,3 +136,7 @@ Go to `Tools > Options > Keyboard` and search for `Tools.StartRecording`, `Tools
 * How can I assign a custom keyboard shortcut to a macro?
 
 See [Assigning a custom keyboard shortcut](#customshortcut).
+
+* How can I have my project macro folder in the Macro Explorer
+
+The Macro Explorer displays all macros in its Macro Directory and its sub directories. You can open the Macro Directory by clicking the last blue arrow symbol. But if you create a Folder soft link there (using `mklink /D`), you can link to whichever folder you want and the Macro Explorer displays the content of your folder of choice, too. This makes it possible to have your macros in your project's version control.

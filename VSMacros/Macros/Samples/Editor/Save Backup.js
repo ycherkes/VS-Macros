@@ -16,5 +16,5 @@ if (typeof (dte.ActiveDocument) != undefined)
     dte.ItemOperations.NewFile("General\\Text File");
     dte.ActiveDocument.Object("TextDocument").Selection.Insert(text);
     dte.ActiveDocument.Save(fileName);
-    dte.ActiveDocument.Close(saveChangesNo)     // Already saved with line above, don't need to save again.
+    dte.ActiveDocument.Close(saveChangesNo);     // Already saved with line above, don't need to save again.
 }

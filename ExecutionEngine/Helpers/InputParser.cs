@@ -4,10 +4,10 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using Microsoft.Internal.VisualStudio.Shell;
 using System;
 using System.Globalization;
 using System.IO;
-using Microsoft.Internal.VisualStudio.Shell;
 using VisualStudio.Macros.ExecutionEngine;
 using VSMacros.ExecutionEngine.Pipes.Shared;
 

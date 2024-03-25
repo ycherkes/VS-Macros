@@ -4,6 +4,10 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Imaging.Interop;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,10 +15,9 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
 using VSMacros.Engines;
 using GelUtilities = Microsoft.Internal.VisualStudio.PlatformUI.Utilities;
 
@@ -24,16 +27,14 @@ namespace VSMacros.Models
     {
         // HashSet containing the enabled directories
         private static HashSet<string> enabledDirectories = new HashSet<string>();
-        public static HashSet<string> EnabledDirectories { 
-            get 
-            { 
-                return MacroFSNode.enabledDirectories; 
-            } 
+        public static HashSet<string> EnabledDirectories
+        {
+            get => enabledDirectories;
 
             set
             {
-                MacroFSNode.enabledDirectories = value;
-                MacroFSNode.RootNode.SetIsExpanded(MacroFSNode.RootNode, MacroFSNode.enabledDirectories);
+                enabledDirectories = value;
+                RootNode.SetIsExpanded(RootNode, enabledDirectories);
             }
         }
 
@@ -62,13 +63,13 @@ namespace VSMacros.Models
 
         public MacroFSNode(string path, MacroFSNode parent = null)
         {
-            this.IsDirectory = (File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory;
-            this.FullPath = path;
-            this.shortcut = MacroFSNode.ToFetch;
-            this.isEditable = false;
-            this.isSelected = false;
-            this.isExpanded = false;
-            this.isMatch = false;
+            IsDirectory = (File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory;
+            FullPath = path;
+            shortcut = ToFetch;
+            isEditable = false;
+            isSelected = false;
+            isExpanded = false;
+            isMatch = false;
             this.parent = parent;
 
             // Monitor that node 
@@ -77,16 +78,13 @@ namespace VSMacros.Models
 
         public string FullPath
         {
-            get
-            { 
-                return this.fullPath;
-            }
+            get => fullPath;
 
-            set 
-            { 
-                this.fullPath = value;
-                this.NotifyPropertyChanged("FullPath");
-                this.NotifyPropertyChanged("Name");
+            private set
+            {
+                fullPath = value;
+                NotifyPropertyChanged("FullPath");
+                NotifyPropertyChanged("Name");
             }
         }
 
@@ -94,14 +92,9 @@ namespace VSMacros.Models
         {
             get
             {
-                string path = Path.GetFileNameWithoutExtension(this.FullPath);
+                string path = Path.GetFileNameWithoutExtension(FullPath);
 
-                if (string.IsNullOrWhiteSpace(path))
-                {
-                    return this.FullPath;
-                }
-
-                return path;
+                return string.IsNullOrWhiteSpace(path) ? FullPath : path;
             }
 
             set
@@ -111,19 +104,19 @@ namespace VSMacros.Models
                     // Path.GetFullPath will throw an exception if the path is invalid
                     Path.GetFileName(value);
 
-                    if (value != this.Name && !string.IsNullOrWhiteSpace(value))
+                    if (value != Name && !string.IsNullOrWhiteSpace(value))
                     {
-                        string oldFullPath = this.FullPath;
-                        string newFullPath = Path.Combine(Path.GetDirectoryName(this.FullPath), value + Path.GetExtension(this.FullPath));
+                        string oldFullPath = FullPath;
+                        string newFullPath = Path.Combine(Path.GetDirectoryName(FullPath), value + Path.GetExtension(FullPath));
 
                         // Update file system
-                        if (this.IsDirectory)
+                        if (IsDirectory)
                         {
                             Directory.Move(oldFullPath, newFullPath);
 
-                            if (MacroFSNode.enabledDirectories.Remove(oldFullPath))
+                            if (enabledDirectories.Remove(oldFullPath))
                             {
-                                MacroFSNode.enabledDirectories.Add(newFullPath);
+                                enabledDirectories.Add(newFullPath);
                             }
                         }
                         else
@@ -132,12 +125,12 @@ namespace VSMacros.Models
                         }
 
                         // Update object
-                        this.FullPath = newFullPath;
+                        FullPath = newFullPath;
 
                         // Update shortcut
-                        if (this.Shortcut >= MacroFSNode.None)
+                        if (Shortcut >= None)
                         {
-                            Manager.Shortcuts[this.shortcut] = newFullPath;
+                            Manager.Shortcuts[shortcut] = newFullPath;
                             Manager.Instance.SaveShortcuts(true);
                         }
                     }
@@ -147,7 +140,7 @@ namespace VSMacros.Models
                     if (e.Message != null)
                     {
                         Manager.Instance.ShowMessageBox(e.Message);
-                        MacroFSNode.RefreshTree();
+                        RefreshTree();
                     }
                 }
             }
@@ -155,19 +148,16 @@ namespace VSMacros.Models
 
         public int Shortcut
         {
-            get
-            {
-                return this.shortcut;
-            }
+            get => shortcut;
 
             set
             {
                 // Shortcut will be refetched
-                this.shortcut = MacroFSNode.ToFetch;
+                shortcut = ToFetch;
 
                 // Just notify the binding
-                this.NotifyPropertyChanged("Shortcut");
-                this.NotifyPropertyChanged("FormattedShortcut");
+                NotifyPropertyChanged("Shortcut");
+                NotifyPropertyChanged("FormattedShortcut");
             }
         }
 
@@ -175,24 +165,24 @@ namespace VSMacros.Models
         {
             get
             {
-                if (this.shortcut == MacroFSNode.ToFetch)
+                if (shortcut == ToFetch)
                 {
-                    
-                    this.shortcut = MacroFSNode.None;
+
+                    shortcut = None;
 
                     // Find shortcut, if it exists
                     for (int i = 1; i < 10; i++)
                     {
-                        if (string.Compare(Manager.Shortcuts[i], this.FullPath, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Compare(Manager.Shortcuts[i], FullPath, StringComparison.OrdinalIgnoreCase) == 0)
                         {
-                            this.shortcut = i;
+                            shortcut = i;
                         }
-                    }                  
+                    }
                 }
 
-                if (this.shortcut != MacroFSNode.None)
+                if (shortcut != None)
                 {
-                    return string.Format(MacroFSNode.ShortcutKeys, this.shortcut);
+                    return string.Format(ShortcutKeys, shortcut);
                 }
 
                 return string.Empty;
@@ -203,15 +193,15 @@ namespace VSMacros.Models
         {
             get
             {
-                if (this.IsDirectory)
+                if (IsDirectory)
                 {
                     Bitmap bmp;
 
-                    if (this == MacroFSNode.RootNode)
+                    if (this == RootNode)
                     {
                         bmp = Resources.RootIcon;
                     }
-                    else if (this.isExpanded)
+                    else if (isExpanded)
                     {
                         bmp = Resources.FolderOpenedIcon;
                     }
@@ -226,17 +216,26 @@ namespace VSMacros.Models
                             Int32Rect.Empty,
                             BitmapSizeOptions.FromEmptyOptions());
                 }
-                else
+                ThreadHelper.ThrowIfNotOnUIThread();
+                IVsImageService2 imageService = (IVsImageService2)((IServiceProvider)VSMacrosPackage.Current).GetService(typeof(SVsImageService));
+                if (imageService != null)
                 {
-                    IVsImageService imageService = (IVsImageService)((IServiceProvider)VSMacrosPackage.Current).GetService(typeof(SVsImageService));
-                    if (imageService != null)
+                    //IVsUIObject uiObject = imageService.GetIconForFile(Path.GetFileName(this.FullPath), __VSUIDATAFORMAT.VSDF_WPF);
+                    ImageMoniker imageMoniker = imageService.GetImageMonikerForFile(Path.GetFileName(FullPath));
+                    IVsUIObject uiObject = imageService.GetImage(imageMoniker, new ImageAttributes
                     {
-                        IVsUIObject uiObject = imageService.GetIconForFile(Path.GetFileName(this.FullPath), __VSUIDATAFORMAT.VSDF_WPF);
-                        if (uiObject != null)
-                        {
-                            BitmapSource bitmapSource = GelUtilities.GetObjectData(uiObject) as BitmapSource;
-                            return bitmapSource;
-                        }
+                        Format = (uint)__VSUIDATAFORMAT.VSDF_WPF,
+                        Flags = (uint)_ImageAttributesFlags.IAF_RequiredFlags,
+                        StructSize = Marshal.SizeOf(typeof(ImageAttributes)),
+                        ImageType = (uint)_UIImageType.IT_Bitmap,
+                        LogicalHeight = 50,
+                        LogicalWidth = 50
+                    });
+
+                    if (uiObject != null)
+                    {
+                        BitmapSource bitmapSource = GelUtilities.GetObjectData(uiObject) as BitmapSource;
+                        return bitmapSource;
                     }
                 }
 
@@ -247,181 +246,123 @@ namespace VSMacros.Models
 
         public bool IsEditable
         {
-            get 
-            { 
-                return this.isEditable; 
-            }
+            get => isEditable;
 
             set
             {
-                this.isEditable = value;
-                this.NotifyPropertyChanged("IsEditable");
+                isEditable = value;
+                NotifyPropertyChanged("IsEditable");
             }
         }
 
         public bool IsSelected
         {
-            get
-            {
-                return this.isSelected;
-            }
+            get => isSelected;
 
             set
             {
-                this.isSelected = value;
-                this.NotifyPropertyChanged("IsSelected");
+                isSelected = value;
+                NotifyPropertyChanged("IsSelected");
             }
         }
 
         public bool IsExpanded
         {
-            get
-            {
-                return this.isExpanded || this.isMatch;
-            }
+            get => isExpanded || isMatch;
 
             set
             {
-                if (this.IsDirectory)
+                if (!IsDirectory) return;
+
+                isExpanded = value;
+
+                if (IsExpanded)
                 {
-                    this.isExpanded = value;
 
-                    if (this.IsExpanded)
+                    enabledDirectories.Add(FullPath);
+
+                    // Expand parent as well
+                    if (parent != null)
                     {
-
-                            MacroFSNode.enabledDirectories.Add(this.FullPath);
-
-                        // Expand parent as well
-                        if (this.parent != null)
-                        {
-                            this.parent.IsExpanded = true;
-                        }
+                        parent.IsExpanded = true;
                     }
-                    else
-                    {
-
-                            MacroFSNode.enabledDirectories.Remove(this.FullPath);
-                    }
-
-                    this.NotifyPropertyChanged("IsExpanded");
-                    this.NotifyPropertyChanged("Icon");
                 }
+                else
+                {
+
+                    enabledDirectories.Remove(FullPath);
+                }
+
+                NotifyPropertyChanged("IsExpanded");
+                NotifyPropertyChanged("Icon");
             }
         }
 
         public bool IsMatch
         {
-            get
-            {
-                // If searching is not enabled, always return true
-                if (!MacroFSNode.Searching)
-                {
-                    return true;
-                }
-                else
-                {
-                    return this.isMatch;
-                }
-            }
+            get => // If searching is not enabled, always return true
+                   !Searching || isMatch;
             set
             {
-                this.isMatch = value;
+                isMatch = value;
 
-                if (this.IsMatch && this.parent != null)
+                if (IsMatch && parent != null)
                 {
                     //this.isExpanded = true;
-                    this.parent.IsMatch = true;
+                    parent.IsMatch = true;
                 }
 
-                this.NotifyPropertyChanged("IsExpanded");
-                this.NotifyPropertyChanged("IsMatch");
+                NotifyPropertyChanged("IsExpanded");
+                NotifyPropertyChanged("IsMatch");
             }
         }
 
-        public bool IsNotRoot
-        {
-            get
-            {
-                return this != MacroFSNode.RootNode;
-            }
-        }
+        public bool IsNotRoot => this != RootNode;
 
-        public int Depth
-        {
-            get
-            {
-                if (this.parent == null)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return this.parent.Depth + 1;
-                }
-            }
-        }
+        public int Depth => parent == null ? 0 : parent.Depth + 1;
 
-        public bool IsDirectory { get; private set; }
+        public bool IsDirectory { get; }
 
-        public MacroFSNode Parent
-        {
-            get
-            {
-                return this.parent == null ? MacroFSNode.RootNode : this.parent;
-            }
-        }
+        public MacroFSNode Parent => parent ?? RootNode;
 
         public bool Equals(MacroFSNode node)
         {
-            return this.FullPath == node.FullPath;
+            return FullPath == node.FullPath;
         }
 
         public ObservableCollection<MacroFSNode> Children
         {
             get
             {
-                if (!this.IsDirectory)
+                if (!IsDirectory)
                 {
                     return null;
                 }
 
-                if (this.children == null)
-                {
-                    // Initialize children
-                    //this.children = new ObservableCollection<MacroFSNode>();
-
-                    this.children = this.GetChildNodes();
-
-                    // Retrieve children in a background thread
-                    // TODO problem: SetIsExpanded goes down the tree and enables previously enabled folders -> if fetching the child is done in the background, the method thinks that the folder has no child and skips it
-                    //Task.Run(() => { this.children = this.GetChildNodes(); })
-                    //   .ContinueWith(_ => this.NotifyPropertyChanged("Children"), TaskScheduler.FromCurrentSynchronizationContext());
-                }
-
-                return this.children;
+                return children ?? (children = GetChildNodes());
             }
         }
 
         private ObservableCollection<MacroFSNode> GetChildNodes()
         {
-            var files = from childFile in Directory.GetFiles(this.FullPath)
-                       where Path.GetExtension(childFile) == ".js"
-                       where childFile != Manager.CurrentMacroPath
-                       orderby childFile
-                       select childFile;
+            var files = from childFile in Directory.GetFiles(FullPath)
+                        where Path.GetExtension(childFile) == ".js"
+                        where childFile != Manager.CurrentMacroPath
+                        orderby childFile
+                        select childFile;
 
-            var directories = from childDirectory in Directory.GetDirectories(this.FullPath)
+            var directories = from childDirectory in Directory.GetDirectories(FullPath)
                               orderby childDirectory
                               select childDirectory;
 
             // Merge files and directories into a collection
-            ObservableCollection<MacroFSNode> collection = 
+            ObservableCollection<MacroFSNode> collection =
                 new ObservableCollection<MacroFSNode>(
                     files.Union(directories)
                          .Select((item) => new MacroFSNode(item, this)));
 
             // Add Current macro at the beginning if this is the root node
-            if (this == MacroFSNode.RootNode)
+            if (this == RootNode)
             {
                 collection.Insert(0, new MacroFSNode(Manager.CurrentMacroPath, this));
             }
@@ -432,15 +373,15 @@ namespace VSMacros.Models
         public void Delete()
         {
             // If a shortcut is bound to the macro
-            if (this.shortcut > 0)
+            if (shortcut > 0)
             {
                 // Remove shortcut from shortcut list
-                Manager.Shortcuts[this.shortcut] = string.Empty;
+                Manager.Shortcuts[shortcut] = string.Empty;
                 Manager.Instance.SaveShortcuts(true);
             }
 
             // Remove macro from collection
-            this.parent.children.Remove(this);
+            parent.children.Remove(this);
 
             // Unmonitor the file
             //FileChangeMonitor.Instance.UnmonitorFileSystemEntry(this.FullPath, this.IsDirectory);
@@ -448,29 +389,29 @@ namespace VSMacros.Models
 
         public void EnableEdit()
         {
-            this.IsEditable = true;
+            IsEditable = true;
         }
 
         public void DisableEdit()
         {
-            this.IsEditable = false;
+            IsEditable = false;
         }
 
         public static void EnableSearch()
         {
             // Set Searching to true
-            MacroFSNode.Searching = true;
+            Searching = true;
 
             // And then notify all node that their IsMatch property might have changed
-            MacroFSNode.NotifyAllNode(MacroFSNode.RootNode, "IsMatch");
+            NotifyAllNode(RootNode, "IsMatch");
         }
 
         public static void DisableSearch()
         {
             // Set Searching to true
-            MacroFSNode.Searching = false;
+            Searching = false;
 
-            MacroFSNode.UnmatchAllNodes(MacroFSNode.RootNode);
+            UnmatchAllNodes(RootNode);
         }
 
         /// <summary>
@@ -480,13 +421,13 @@ namespace VSMacros.Models
         /// <returns>MacroFSNode  whose FullPath is path</returns>
         public static MacroFSNode FindNodeFromFullPath(string path)
         {
-            if (MacroFSNode.RootNode == null)
+            if (RootNode == null)
             {
                 return null;
             }
 
             // Default node if search fails
-            MacroFSNode defaultNode = MacroFSNode.RootNode.Children.Count > 0 ? MacroFSNode.RootNode.Children[0] : MacroFSNode.RootNode;
+            MacroFSNode defaultNode = RootNode.Children.Count > 0 ? RootNode.Children[0] : RootNode;
 
             // Make sure path is a valid string
             if (string.IsNullOrEmpty(path))
@@ -499,7 +440,7 @@ namespace VSMacros.Models
             string[] substrings = shortenPath.Split(new char[] { '\\' });
 
             // Starting from the root,
-            MacroFSNode node = MacroFSNode.RootNode;
+            MacroFSNode node = RootNode;
 
             try
             {
@@ -539,8 +480,8 @@ namespace VSMacros.Models
 
         public static void RefreshTree()
         {
-            MacroFSNode root = MacroFSNode.RootNode;
-            MacroFSNode.RefreshTree(root);
+            MacroFSNode root = RootNode;
+            RefreshTree(root);
         }
 
         private void AfterRefresh(MacroFSNode root, string selectedPath, HashSet<string> dirs)
@@ -549,7 +490,7 @@ namespace VSMacros.Models
             root.SetIsExpanded(root, dirs);
 
             // Selecte the previously selected macro
-            MacroFSNode selected = MacroFSNode.FindNodeFromFullPath(selectedPath);
+            MacroFSNode selected = FindNodeFromFullPath(selectedPath);
             selected.IsSelected = true;
 
             // Notify change
@@ -580,7 +521,7 @@ namespace VSMacros.Models
                 foreach (var child in root.Children)
                 {
                     child.IsExpanded = false;
-                    MacroFSNode.CollapseAllNodes(child);
+                    CollapseAllNodes(child);
                 }
             }
         }
@@ -595,7 +536,7 @@ namespace VSMacros.Models
             {
                 foreach (var child in root.Children)
                 {
-                    MacroFSNode.UnmatchAllNodes(child);
+                    UnmatchAllNodes(child);
                 }
             }
         }
@@ -620,7 +561,7 @@ namespace VSMacros.Models
                         item.IsExpanded = true;
 
                         // Recursion on children
-                        this.SetIsExpanded(item, enabledDirs);
+                        SetIsExpanded(item, enabledDirs);
                     }
                 }
             }
@@ -628,24 +569,20 @@ namespace VSMacros.Models
 
         private void NotifyPropertyChanged(string name)
         {
-            PropertyChangedEventHandler handler = this.PropertyChanged;
-            if (handler != null)
-            {
-                handler(this, new PropertyChangedEventArgs(name));
-            }
+            PropertyChangedEventHandler handler = PropertyChanged;
+            handler?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         // Notifies all the nodes of the tree rooted at 'node'
-        public static void NotifyAllNode(MacroFSNode root, string property)
+        private static void NotifyAllNode(MacroFSNode root, string property)
         {
             root.NotifyPropertyChanged(property);
 
-            if (root.Children != null)
+            if (root.Children == null) return;
+
+            foreach (var child in root.Children)
             {
-                foreach (var child in root.Children)
-                {
-                    MacroFSNode.NotifyAllNode(child, property);
-                }
+                NotifyAllNode(child, property);
             }
         }
     }

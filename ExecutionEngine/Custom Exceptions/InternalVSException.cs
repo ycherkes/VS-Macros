@@ -8,19 +8,19 @@ using System;
 
 namespace VSMacros.ExecutionEngine
 {
-    public class InternalVSException : Exception
+    public class InternalVsException : Exception
     {
-        public InternalVSException(string message, string source, string stackTrace, string targetSite)
+        public InternalVsException(string message, string source, string stackTrace, string targetSite)
         {
-            this.Description = message;
-            this.Source = source;
-            this.StackTrace = stackTrace;
-            this.TargetSite = targetSite;
+            Description = message;
+            Source = source;
+            StackTrace = stackTrace;
+            TargetSite = targetSite;
         }
 
-        public string Description { get; private set; }
+        public string Description { get; }
         public override string Source { get; set; }
-        public new string StackTrace { get; private set; }
-        public new string TargetSite { get; private set; }
+        public new string StackTrace { get; }
+        public new string TargetSite { get; }
     }
 }

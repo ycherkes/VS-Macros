@@ -19,8 +19,8 @@ namespace VSMacros.Engines
     {
         private WindowActivationWatcher activationWatcher;
         private CommandExecutionWatcher commandWatcher;
-        private RecorderDataModel dataModel;
-        private IServiceProvider serviceProvider;
+        private readonly RecorderDataModel dataModel;
+        private readonly IServiceProvider serviceProvider;
         private bool recording;
 
         public Recorder(IServiceProvider serviceProvider)
@@ -28,14 +28,14 @@ namespace VSMacros.Engines
             Validate.IsNotNull(serviceProvider, "serviceProvider");
             this.serviceProvider = serviceProvider;
             dataModel = new RecorderDataModel();
-            this.activationWatcher = this.activationWatcher ?? new WindowActivationWatcher(serviceProvider: this.serviceProvider, dataModel: this.dataModel);
+            activationWatcher = new WindowActivationWatcher(serviceProvider: serviceProvider, dataModel: dataModel);
         }
 
         public void StartRecording()
         {
-            this.ClearData();
-            this.commandWatcher = this.commandWatcher ?? new CommandExecutionWatcher(this.serviceProvider);
-            this.recording = true;
+            ClearData();
+            commandWatcher = commandWatcher ?? new CommandExecutionWatcher(serviceProvider);
+            recording = true;
         }
 
         public void StopRecording(string path)
@@ -43,13 +43,13 @@ namespace VSMacros.Engines
             using (StreamWriter fs = new StreamWriter(path))
             {
                 // Add reference to DTE for Intellisense
-                fs.WriteLine(string.Format("/// <reference path=\"" + Manager.IntellisensePath + "\" />{0}", Environment.NewLine));
+                fs.WriteLine("/// <reference path=\"" + Manager.IntellisensePath + "\" />{0}", Environment.NewLine);
 
                 bool inDocument = Manager.Instance.PreviousWindowIsDocument;
 
-                for (int i = 0; i < this.dataModel.Actions.Count; i++)
-               {
-                    RecordedActionBase action = this.dataModel.Actions[i];
+                for (int i = 0; i < dataModel.Actions.Count; i++)
+                {
+                    RecordedActionBase action = dataModel.Actions[i];
 
                     if (action is RecordedCommand)
                     {
@@ -57,10 +57,10 @@ namespace VSMacros.Engines
                         RecordedCommand empty = new RecordedCommand(Guid.Empty, 0, string.Empty, '\0');
 
                         // If next action is a recorded command, try to merge
-                        if (i < this.dataModel.Actions.Count - 1 &&
-                        this.dataModel.Actions[i + 1] is RecordedCommand)
+                        if (i < dataModel.Actions.Count - 1 &&
+                            dataModel.Actions[i + 1] is RecordedCommand)
                         {
-                            RecordedCommand next = this.dataModel.Actions[i + 1] as RecordedCommand;
+                            RecordedCommand next = dataModel.Actions[i + 1] as RecordedCommand;
 
                             if (current.IsInsert())
                             {
@@ -77,8 +77,8 @@ namespace VSMacros.Engines
                                         buffer.Add(next.Input);
                                     }
 
-                                    next = this.dataModel.Actions[++i] as RecordedCommand ?? empty;
-                                } while (next.IsInsert() && i + 1 < this.dataModel.Actions.Count);
+                                    next = dataModel.Actions[++i] as RecordedCommand ?? empty;
+                                } while (next.IsInsert() && i + 1 < dataModel.Actions.Count);
 
                                 // Process last character
                                 if (next.IsInsert())
@@ -103,11 +103,11 @@ namespace VSMacros.Engines
                             {
                                 // Compute the number of iterations of the same command
                                 int iterations = 1;
-                                while (current.CommandName == next.CommandName && (i + 2 < this.dataModel.Actions.Count || i + 1 == this.dataModel.Actions.Count))
+                                while (current.CommandName == next.CommandName && (i + 2 < dataModel.Actions.Count || i + 1 == dataModel.Actions.Count))
                                 {
                                     iterations++;
                                     current = next;
-                                    next = this.dataModel.Actions[++i + 1] as RecordedCommand ?? empty;
+                                    next = dataModel.Actions[++i + 1] as RecordedCommand ?? empty;
                                 }
 
                                 if (current.CommandName == next.CommandName)
@@ -139,41 +139,41 @@ namespace VSMacros.Engines
                 }
             }
 
-            this.recording = false;
+            recording = false;
         }
 
         public bool IsRecording
         {
-            get { return this.recording; }
+            get { return recording; }
         }
 
         public void AddCommandData(Guid commandSet, uint identifier, string commandName, char input)
         {
-            this.dataModel.AddExecutedCommand(commandSet, identifier, commandName, input);
+            dataModel.AddExecutedCommand(commandSet, identifier, commandName, input);
         }
 
         public void AddWindowActivation(Guid toolWindowID, string name)
         {
-            this.dataModel.AddWindow(toolWindowID, name);
+            dataModel.AddWindow(toolWindowID, name);
         }
 
         public void AddWindowActivation(string path)
         {
-            this.dataModel.AddWindow(path);
+            dataModel.AddWindow(path);
         }
 
         public void ClearData()
         {
-            this.dataModel.ClearActions();
+            dataModel.ClearActions();
         }
 
         public void Dispose()
         {
-            using (this.commandWatcher)
-            using (this.activationWatcher)
+            using (commandWatcher)
+            using (activationWatcher)
             {
-                this.commandWatcher = null;
-                this.activationWatcher = null;
+                commandWatcher = null;
+                activationWatcher = null;
             }
         }
     }

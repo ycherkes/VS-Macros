@@ -27,7 +27,7 @@ namespace VSMacros.Engines
     {
         private static Manager instance;
         internal Executor executor;
-        private Executor Executor => (executor ?? (executor = new Executor()));
+        private Executor Executor => executor ?? (executor = new Executor());
 
         #region Paths
 
@@ -181,12 +181,12 @@ namespace VSMacros.Engines
                 PreviousWindow.Show();
             }
 
-            VSMacrosPackage.Current.StatusBarChange(Resources.StatusBarPlayingText, 1);
+            VSMacrosPackage.Current.StatusBarChange(Resources.StatusBarPlayingText);
 
             TogglePlayback(path, iterations);
         }
 
-        public void PlaybackMultipleTimes(string path)
+        public void PlaybackMultipleTimes()
         {
             PlaybackMultipleTimesDialog dlg = new PlaybackMultipleTimesDialog();
             bool? result = dlg.ShowDialog();
@@ -334,7 +334,7 @@ namespace VSMacros.Engines
 
         public void Edit()
         {
-            // TODO detect when a macro is dragged and it's opened -> use the overload to get the itemID
+            // TODO detect when a macro is dragged, and it's opened -> use the overload to get the itemID
             MacroFSNode macro = SelectedMacro;
             string path = macro.FullPath;
 
@@ -388,11 +388,6 @@ namespace VSMacros.Engines
                 // Mark the shortcuts in memory as dirty
                 shortcutsDirty = true;
             }
-        }
-
-        public void SetShortcutsDirty()
-        {
-            shortcutsDirty = true;
         }
 
         public void Delete()
@@ -542,18 +537,6 @@ namespace VSMacros.Engines
             SaveShortcuts();
         }
 
-        private string RelativeIntellisensePath(int depth)
-        {
-            string path = IntellisenseFileName;
-
-            for (int i = 0; i < depth; i++)
-            {
-                path = "../" + path;
-            }
-
-            return path;
-        }
-
         public void MoveItem(MacroFSNode sourceItem, MacroFSNode targetItem)
         {
             string sourcePath = sourceItem.FullPath;
@@ -631,43 +614,6 @@ namespace VSMacros.Engines
                 dte.ItemOperations.OpenFile(target);
             }
             catch (ArgumentException) { }
-        }
-
-        private StreamReader LoadFile(string path)
-        {
-            try
-            {
-                if (!File.Exists(path))
-                {
-                    throw new FileNotFoundException(Resources.MacroNotFound);
-                }
-
-                StreamReader str = new StreamReader(path);
-
-                return str;
-            }
-            catch (FileNotFoundException e)
-            {
-                ShowMessageBox(e.Message);
-            }
-
-            return null;
-        }
-
-        private void SaveMacro(Stream str, string path)
-        {
-            try
-            {
-                using (var fileStream = File.Create(path))
-                {
-                    str.Seek(0, SeekOrigin.Begin);
-                    str.CopyTo(fileStream);
-                }
-            }
-            catch (Exception e)
-            {
-                ShowMessageBox(e.Message);
-            }
         }
 
         public void LoadFolderExpansion()

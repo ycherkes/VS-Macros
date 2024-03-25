@@ -20,7 +20,7 @@
     <ProjectGuid>{77E211B3-F4D8-4FAF-8B8B-79E9FF8A494B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MicrosoftCorporation.VSMacros</RootNamespace>
+    <RootNamespace>VSMacros</RootNamespace>
     <AssemblyName>VSMacros</AssemblyName>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile Condition="'$(SignKey)' == ''">Key.snk</AssemblyOriginatorKeyFile>
